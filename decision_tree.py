@@ -46,11 +46,38 @@ class Tree():
 #Y: list of labels data 1D numpy array
 #max_depth is the max depth for the resulting tree
 def DT_train_binary(X,Y, max_depth):
-  print("Features: \n", X)
-  print("Labels: \n", Y)
-  print(Y.shape)
+  print("Features: \n", X, "\n")
+  print("Labels: \n", Y, "\n")
+  samples = X.shape[0]
+  features = X.shape[1]
+  labels = Y.shape[0]
+
+
+  print(entropy_tree(Y))
+
   DT_tree = Tree(max_depth)
   DT_tree.debug()
+
+
+
+def entropy_tree(tree):
+  num_false = 0
+  num_true = 0
+  total_features = tree.shape[0]
+  for x in range(tree.shape[0]):
+    print(tree[x][0])
+    if(tree[x][0] == 1):
+      num_true = num_true + 1
+    elif(tree[x][0] == 0):
+      num_false = num_false + 1
+  print("num_true: ", num_true)
+  print("num_false: ", num_false)
+
+  return(calc_entry(num_false, num_true, total_features))
+
+
+def calc_entry(n, y, total):
+  return ((-n / total) * math.log(n/total, 2)) - ((y/total) * math.log(y/total, 2))
 
 
 def DT_test_binary(X,Y,DT):
