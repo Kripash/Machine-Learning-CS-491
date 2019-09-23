@@ -4,7 +4,7 @@ import math
 import copy
 
 X = np.array([[0,1,0,1],[1,1,1,1],[0,0,0,1]])
-Y = np.array([[1], [1], [0]])
+Y = np.array([[1], [0], [0]])
 max_depth = 2
 
 class Node():
@@ -71,6 +71,7 @@ class Tree():
   def debug(self):
     print("Printing Tree data in order!(left, self, right) recursively")
     self.root.debug()
+    print("Finishing Printing Tree!")
 
 
 #X: list of training feature data 2D numpy array
@@ -98,12 +99,12 @@ def DT_train_binary(X,Y, max_depth):
   DT_binary_tree.set_root(root_node)
   if(DT_binary_tree.root.h_value == 0):
     print ("Done")
-    DT_binary_tree.debug()
+    #DT_binary_tree.debug()
     return DT_binary_tree
   else:
     features_list[DT_binary_tree.root.feature] = 1
     entropy_subtree(X, Y, max_depth - 1, DT_binary_tree, root_node, copy.copy(features_list))
-    DT_binary_tree.debug()
+    #DT_binary_tree.debug()
     return DT_binary_tree
 
 def entropy_tree(tree):
@@ -324,11 +325,58 @@ def calc_entry(n, y, total):
 
 
 def DT_test_binary(X,Y,DT):
-  print("test")
+  #print(Y.shape[0])
+  num_correct = 0
+  this_node = DT.root
+  for x in range(Y.shape[0]):
+    this_feature = this_node.feature
+    direction = X[x][this_feature]
+    if(direction == 0 and this_node.node_left == None):
+      if(this_node.L_value == Y[x]):
+        num_correct = num_correct + 1
+    elif(direction == 0 and this_node.node_left != None):
+      num_correct = num_correct + DT_test_binary_helper(X[x], Y[x], this_node.node_left)
+    elif(direction == 1 and this_node.node_right == None):
+      if(this_node.R_value == Y[x]):
+        num_correct = num_correct + 1
+    elif(direction == 1 and this_node.node_right != None):
+      num_correct = num_correct + DT_test_binary_helper(X, Y, this_node.node_right)
+
+  print((num_correct)/(Y.shape[0]), "accuracy ---> ", end= ' ')
+  return(num_correct, Y.shape[0])
+
+
+def DT_test_binary_helper(sample, label, this_node):
+  #print("In DT_test_binary_helper")
+  this_feature = this_node.feature
+  direction = sample[this_feature]
+  #print(sample, label, this_feature, direction)
+  num_correct = 0
+  if (direction == 0 and this_node.node_left == None):
+    if (this_node.L_value == label):
+      num_correct = num_correct + 1
+  elif (direction == 0 and this_node.node_left != None):
+    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_left)
+  elif (direction == 1 and this_node.node_right == None):
+    if (this_node.R_value == label):
+      num_correct = num_correct + 1
+  elif (direction == 1 and this_node.node_right != None):
+    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_right)
+
+  return num_correct
+
 
 
 def DT_train_binary_best(X_train, Y_train, X_val, Y_val):
   print("best")
 
 
-DT_train_binary(X, Y, max_depth)
+dt_tree = DT_train_binary(X, Y, max_depth)
+dt_tree.debug()
+
+validation = np.array([[1,0,1,0],[0,0,0,0],[1,1,1,0]])
+validation_label = np.array([[1], [0], [0]])
+
+#DT_test_binary(X, Y, dt_tree)
+accuracy = DT_test_binary(validation, validation_label, dt_tree)
+print("number correct: ", accuracy[0], " out of total: ", accuracy[1])
