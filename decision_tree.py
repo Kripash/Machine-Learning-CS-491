@@ -3,10 +3,6 @@ import numpy as np
 import math
 import copy
 
-X = np.array([[0,1,0,1],[1,1,1,1],[0,0,0,1]])
-Y = np.array([[1], [0], [0]])
-max_depth = 2
-
 class Node():
   def __init__(self, value, node_left, node_right, feature, left, right):
     self.node_left = copy.copy(node_left)
@@ -64,6 +60,7 @@ class Tree():
   def __init__(self, max_depth):
     self.root = Node(None, None, None, None, None, None)
     self.max_depth = copy.copy(max_depth)
+    self.label = -1
 
   def set_root(self, root):
     self.root = root
@@ -78,27 +75,30 @@ class Tree():
 #Y: list of labels data 1D numpy array
 #max_depth is the max depth for the resulting tree
 def DT_train_binary(X,Y, max_depth):
-  if(max_depth == 0):
-    print("Max depth is equal to 0! Try another input!")
-    sys.exit(0)
   feats = []
   for features in range(X.shape[1]):
     feats.append(0)
   features_list = np.array(feats)
   #print(features_list)
 
-  print("Features: \n", X, "\n")
-  print("Labels: \n", Y, "\n")
+  #print("Features: \n", X, "\n")
+  #print("Labels: \n", Y, "\n")
   entropy_start = entropy_tree(Y)
   #print (entropy_start)
-  root = find_root(X, Y, entropy_start)
+  if(max_depth == 0):
+    initial_label = find_root(X, Y, entropy_start, max_depth)
+    DT_binary_tree = Tree(max_depth)
+    DT_binary_tree.label = initial_label
+    return DT_binary_tree
+
+  root = find_root(X, Y, entropy_start, max_depth)
   #print(root)
   root_node = Node(root[1], None, None, root[2], root[3], root[4])
   #root_node.append_path((0,0))
   DT_binary_tree = Tree(max_depth)
   DT_binary_tree.set_root(root_node)
   if(DT_binary_tree.root.h_value == 0):
-    print ("Done")
+    #print ("Done")
     #DT_binary_tree.debug()
     return DT_binary_tree
   else:
@@ -269,7 +269,21 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
     if(right_entropy[1] != 0):
       entropy_subtree(features, labels, max_depth - 1, DT_tree, right_node, copy.copy(features_right))
 
-def find_root(features, labels, tree_entropy):
+def find_root(features, labels, tree_entropy, max_depth):
+
+  if(max_depth == 0):
+    num_0 = 0
+    num_1 = 0
+    for x in range(labels.shape[0]):
+      if(labels[x][0] == 0):
+        num_0 = num_0 + 1
+      elif(labels[x][0] == 1):
+        num_1 = num_1 + 1
+    if(num_0 >= num_1):
+      return 0
+    elif(num_1 > num_0):
+      return 1
+
   max_entropy = [ float(-math.inf),-1, -1, -1, -1]
   #print(max_entropy)
   for x in range(features.shape[1]):
@@ -326,6 +340,14 @@ def calc_entry(n, y, total):
 
 def DT_test_binary(X,Y,DT):
   #print(Y.shape[0])
+  if(DT.max_depth == 0):
+    num_correct = 0
+    for labels in range(Y.shape[0]):
+      if(Y[labels] == DT.label):
+        num_correct = num_correct + 1
+    #print((num_correct) / (Y.shape[0]))
+    return (num_correct/ Y.shape[0])
+
   num_correct = 0
   this_node = DT.root
   for x in range(Y.shape[0]):
@@ -342,8 +364,8 @@ def DT_test_binary(X,Y,DT):
     elif(direction == 1 and this_node.node_right != None):
       num_correct = num_correct + DT_test_binary_helper(X, Y, this_node.node_right)
 
-  print((num_correct)/(Y.shape[0]), "accuracy ---> ", end= ' ')
-  return(num_correct, Y.shape[0])
+  #print((num_correct)/(Y.shape[0]))
+  return(num_correct/ Y.shape[0])
 
 
 def DT_test_binary_helper(sample, label, this_node):
@@ -368,15 +390,72 @@ def DT_test_binary_helper(sample, label, this_node):
 
 
 def DT_train_binary_best(X_train, Y_train, X_val, Y_val):
-  print("best")
+  best_tree = (None, -1)
+  for depth in range(X_train.shape[1]):
+    tree = DT_train_binary(X_train, Y_train, depth)
+    accuracy = DT_test_binary(X_val, Y_val, tree)
+    #tree.debug()
+    #print(accuracy, tree.max_depth)
+    if(accuracy > best_tree[1]):
+      best_tree = (tree, accuracy)
+      #print ("best tree: " , accuracy)
+  return (best_tree[0])
+
+
+
+def DT_make_prediction(x, DT):
+  if(DT.max_depth == 0):
+    return DT.label
+  feature = DT.root.feature
+  direction = x[feature]
+  if(direction == 0):
+    if(DT.root.node_left == None):
+      return DT.root.L_value
+    elif(DT.root.node_left != None):
+      return DT_make_prediction_helper(x, DT.root.node_left)
+  elif(direction == 1):
+    if(DT.root.node_right == None):
+      return DT.root.R_value
+    elif(DT.root.node_right != None):
+      return DT_make_prediction_helper(x, DT.root.node_right)
+
+def DT_make_prediction_helper(x,this_node):
+  feature = this_node.feature
+  direction = x[feature]
+  if(direction == 0):
+    if(this_node.node_left == None):
+      return this_node.L_value
+    elif(this_node.node_right != None):
+      return DT_make_prediction_helper(x, this_node.node_left)
+  elif(direction == 1):
+    if(this_node.node_right == None):
+      return this_node.R_value
+    elif(this_node.node_right != None):
+      return DT_make_prediction_helper(x, this_node.node_right)
+
+
+""" TEST AREA """
+X = np.array([[0,1,0,1],[1,1,1,1],[0,0,0,1]])
+Y = np.array([[1], [0], [0]])
+max_depth = -1
 
 
 dt_tree = DT_train_binary(X, Y, max_depth)
 dt_tree.debug()
 
-validation = np.array([[1,0,1,0],[0,0,0,0],[1,1,1,0]])
-validation_label = np.array([[1], [0], [0]])
+validation = np.array([[1,0,1,0],[0,1,0,0],[1,1,1,0]])
+validation_label = np.array([[1], [1], [0]])
 
-#DT_test_binary(X, Y, dt_tree)
 accuracy = DT_test_binary(validation, validation_label, dt_tree)
-print("number correct: ", accuracy[0], " out of total: ", accuracy[1])
+
+
+best_tree = DT_train_binary_best(X, Y, validation, validation_label)
+#best_tree.debug()
+
+
+prediction = DT_make_prediction(validation[0], dt_tree)
+print("prediction is: ", prediction)
+prediction = DT_make_prediction(validation[1], dt_tree)
+print("prediction is: ", prediction)
+prediction = DT_make_prediction(validation[2], dt_tree)
+print("prediction is: ", prediction)
