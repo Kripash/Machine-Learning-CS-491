@@ -8,6 +8,8 @@ class Node():
     self.node_left = copy.copy(node_left)
     self.node_right = copy.copy(node_right)
     self.h_value = copy.copy(value)
+    self.h_left = None
+    self.h_right = None
     self.feature = copy.copy(feature)
     self.L_value = copy.copy(left)
     self.R_value = copy.copy(right)
@@ -33,6 +35,8 @@ class Node():
       self.node_left.debug()
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print("node h_value: " , self.h_value)
+    print("node h_left: ", self.h_left)
+    print("node h_right: ", self.h_right)
     print("node feature: ", self.feature)
     print("node L_value: ", self.L_value)
     print("node R_value: ", self.R_value)
@@ -84,7 +88,6 @@ def DT_train_binary(X,Y, max_depth):
   #print("Features: \n", X, "\n")
   #print("Labels: \n", Y, "\n")
   entropy_start = entropy_tree(Y)
-  #print (entropy_start)
   if(max_depth == 0):
     initial_label = find_root(X, Y, entropy_start, max_depth)
     DT_binary_tree = Tree(max_depth)
@@ -93,7 +96,10 @@ def DT_train_binary(X,Y, max_depth):
 
   root = find_root(X, Y, entropy_start, max_depth)
   #print(root)
+  #print(root)
   root_node = Node(root[1], None, None, root[2], root[3], root[4])
+  root_node.h_left = root_node.h_value
+  root_node.h_right = root_node.h_value
   #root_node.append_path((0,0))
   DT_binary_tree = Tree(max_depth)
   DT_binary_tree.set_root(root_node)
@@ -130,8 +136,14 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
     return
 
   """" Otherwise We need to split somewhere if possible """
-  max_entropy = [ float(-math.inf),-1, -1, -1, -1]
-  right_entropy = [ float(-math.inf),-1, -1, -1, -1]
+  max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1]
+  right_entropy = [ float(-math.inf),-1, -1, -1, -1, -1]
+
+  n_entropy = 0
+  y_entropy = 0
+  rn_entropy = 0
+  ry_entropy = 0
+
   for x in range(features.shape[1]):
     local_tree = copy.copy(DT_tree)
     if(features_list[x] == 0):
@@ -146,13 +158,22 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
       cross_index = []
       for y in range(labels.shape[0]):
         cross_index.append(y)
+      cross_index_copy = copy.copy(cross_index)
       for i in range(len(sub_node.path)):
         feature_index = sub_node.path[i][0]
         feature_val = sub_node.path[i][1]
         for y in cross_index:
           if(features[y][feature_index] != feature_val):
-            cross_index.remove(y)
+            try:
+              cross_index_copy.remove(y)
+            except:
+              pass
+              #print("left", end = ' ')
+              #print(y, cross_index_copy)
+      cross_index = copy.copy(cross_index_copy)
+      #print(cross_index)
       for y in cross_index:
+        #print(y,x, features[y][x])
         if (features[y][x] == 0 and labels[y] == 0):
           num_00 = num_00 + 1
         if (features[y][x] == 0 and labels[y] == 1):
@@ -161,8 +182,7 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
           num_10 = num_10 + 1
         if (features[y][x] == 1 and labels[y] == 1):
           num_11 = num_11 + 1
-      n_entropy = 0
-      y_entropy = 0
+
       if (num_00 + num_01 > 0):
         n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
       if (num_10 + num_11 > 0):
@@ -172,18 +192,21 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
         h_node = ((((num_00 + num_01) / len(cross_index)) * n_entropy) +
                   (((num_10 + num_11) / len(cross_index)) * y_entropy))
 
-        IG = curr_node.h_value - h_node
+        #print(n_entropy, y_entropy, h_node)
+
+        IG = curr_node.h_left - h_node
+        #print(curr_node.h_left, "IG: ", IG)
         if(IG > max_entropy[0]):
           if (num_00 >= num_01):
             if (num_10 >= num_11):
-              max_entropy = (IG, h_node, x, 0, 0)
-            elif (num_11 >= num_10):
-              max_entropy = (IG, h_node, x, 0, 1)
-          elif (num_01 > num_00):
-            if (num_10 > num_11):
-              max_entropy = (IG, h_node, x, 1, 0)
+              max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy)
             elif (num_11 > num_10):
-              max_entropy = (IG, h_node, x, 1, 1)
+              max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy)
+          elif (num_01 > num_00):
+            if (num_10 >= num_11):
+              max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy)
+            elif (num_11 > num_10):
+              max_entropy = (IG, h_node, x, 1, 1, n_entropy, y_entropy)
       """ END LEFT SIDE"""
       #print("~~~~~~~~~~~~~RIGHT SIDE~~~~~~~~~~~~~~")
       """ Computer the Right side now """
@@ -197,44 +220,50 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
       c_index = []
       for a in range(labels.shape[0]):
         c_index.append(a)
+      c_index_copy = copy.copy(c_index)
       for b in range(len(right_node.path)):
         right_feat_index = right_node.path[b][0]
-        right_feat_val = right_node.path[i][1]
+        right_feat_val = right_node.path[b][1]
         for c in c_index:
           if(features[c][right_feat_index] != right_feat_val):
-            c_index.remove(c)
-        for c in c_index:
-          if (features[c][x] == 0 and labels[c] == 0):
-            n_00 = n_00 + 1
-          if (features[c][x] == 0 and labels[c] == 1):
-            n_01 = n_01 + 1
-          if (features[c][x] == 1 and labels[c] == 0):
-            n_10 = n_10 + 1
-          if (features[c][x] == 1 and labels[c] == 1):
-            n_11 = n_11 + 1
-      rn_entropy = 0
-      ry_entropy = 0
+            try:
+              c_index_copy.remove(c)
+            except:
+              pass
+              #print("right", end = ' ')
+              #print(c, cross_index_copy)
+      c_index = copy.copy(c_index_copy)
+      for c in c_index:
+        if (features[c][x] == 0 and labels[c] == 0):
+          n_00 = n_00 + 1
+        if (features[c][x] == 0 and labels[c] == 1):
+          n_01 = n_01 + 1
+        if (features[c][x] == 1 and labels[c] == 0):
+          n_10 = n_10 + 1
+        if (features[c][x] == 1 and labels[c] == 1):
+          n_11 = n_11 + 1
+
       if (n_00 + n_01 > 0):
         rn_entropy = calc_entropy(n_00, n_01, (n_00 + n_01))
       if (n_10 + n_11 > 0):
         ry_entropy = calc_entropy(n_10, n_11, (n_10 + n_11))
-      #print(n_00, n_01, n_10, n_11, ry_entropy, rn_entropy, len(c_index))
       if(len(c_index) > 1):
         h_right = ((((n_00 + n_01) / len(c_index)) * rn_entropy) +
                   (((n_10 + n_11) / len(c_index)) * ry_entropy))
 
-        R_IG = curr_node.h_value - h_right
+        R_IG = curr_node.h_right - h_right
+        #print(curr_node.h_right, "IG: ", IG)
         if(R_IG > right_entropy[0]):
           if (n_00 >= n_01):
             if (n_10 >= n_11):
-              right_entropy = (R_IG, h_right, x, 0, 0)
-            elif (n_11 >= n_10):
-              right_entropy = (R_IG, h_right, x, 0, 1)
+              right_entropy = (R_IG, h_right, x, 0, 0, rn_entropy, ry_entropy)
+            elif (n_11 > n_10):
+              right_entropy = (R_IG, h_right, x, 0, 1, rn_entropy, ry_entropy)
           elif (n_01 > n_00):
-            if (n_10 > n_11):
-              right_entropy = (R_IG, h_right, x, 1, 0)
+            if (n_10 >= n_11):
+              right_entropy = (R_IG, h_right, x, 1, 0, rn_entropy, ry_entropy)
             elif (num_11 > num_10):
-              right_entropy = (R_IG, h_right, x, 1, 1)
+              right_entropy = (R_IG, h_right, x, 1, 1, rn_entropy, ry_entropy)
       features_list[x] = 0
       #print("~~~~~~~~~~~~~~RIGHT SIDE FINISHED~~~~~~~")
   #print(features_list)
@@ -247,6 +276,8 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
     features_left[max_entropy[2]] = 1
     #print(features_left)
     sub_node.h_value = max_entropy[1]
+    sub_node.h_left = max_entropy[5]
+    sub_node.h_right = max_entropy[6]
     sub_node.feature = max_entropy[2]
     sub_node.L_value = max_entropy[3]
     sub_node.R_value = max_entropy[4]
@@ -261,6 +292,8 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
     features_right[right_entropy[2]] = 1
     #print(features_right)
     right_node.h_value = right_entropy[1]
+    right_node.h_left = right_entropy[5]
+    right_node.h_right = right_entropy[6]
     right_node.feature = right_entropy[2]
     right_node.L_value = right_entropy[3]
     right_node.R_value = right_entropy[4]
@@ -315,15 +348,16 @@ def find_root(features, labels, tree_entropy, max_depth):
     h_node = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
                         (((num_10 + num_11)/(labels.shape[0])) * y_entropy) )
     #print("node : ", x , h_node)
+    #print((num_00 +  num_01), (num_10 + num_11), n_entropy, y_entropy)
     IG = tree_entropy - h_node
-    if(IG >= max_entropy[0]):
+    if(IG > max_entropy[0]):
       if(num_00 >= num_01):
         if(num_10 >= num_11):
           max_entropy = (IG, h_node, x, 0, 0)
-        elif(num_11 >= num_10):
+        elif(num_11 > num_10):
           max_entropy = (IG, h_node, x, 0, 1)
       elif (num_01 > num_00):
-        if (num_10 > num_11):
+        if (num_10 >= num_11):
           max_entropy = (IG, h_node, x, 1, 0)
         elif (num_11 > num_10):
           max_entropy = (IG, h_node, x, 1, 1)
@@ -362,7 +396,7 @@ def DT_test_binary(X,Y,DT):
       if(this_node.R_value == Y[x]):
         num_correct = num_correct + 1
     elif(direction == 1 and this_node.node_right != None):
-      num_correct = num_correct + DT_test_binary_helper(X, Y, this_node.node_right)
+      num_correct = num_correct + DT_test_binary_helper(X[x], Y[x], this_node.node_right)
 
   #print((num_correct)/(Y.shape[0]))
   return(num_correct/ Y.shape[0]) * 100
@@ -432,33 +466,3 @@ def DT_make_prediction_helper(x,this_node):
       return this_node.R_value
     elif(this_node.node_right != None):
       return DT_make_prediction_helper(x, this_node.node_right)
-
-
-""" TEST AREA 
-X = np.array([[0,1,0,1],[1,1,1,1],[0,0,0,1]])
-Y = np.array([[1], [0], [0]])
-max_depth = -1
-
-
-dt_tree = DT_train_binary(X, Y, max_depth)
-dt_tree.debug()
-
-validation = np.array([[1,0,1,0],[0,1,0,0],[1,1,1,0]])
-validation_label = np.array([[1], [1], [0]])
-
-accuracy = DT_test_binary(validation, validation_label, dt_tree)
-print(accuracy)
-
-
-best_tree = DT_train_binary_best(X, Y, validation, validation_label)
-#best_tree.debug()
-
-
-prediction = DT_make_prediction(validation[0], dt_tree)
-print("prediction is: ", prediction)
-prediction = DT_make_prediction(validation[1], dt_tree)
-print("prediction is: ", prediction)
-prediction = DT_make_prediction(validation[2], dt_tree)
-print("prediction is: ", prediction)
-
-"""
