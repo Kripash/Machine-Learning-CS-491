@@ -116,7 +116,7 @@ def entropy_tree(tree):
       num_true = num_true + 1
     elif(tree[x][0] == 0):
       num_false = num_false + 1
-  return(calc_entry(num_false, num_true, total_labels))
+  return(calc_entropy(num_false, num_true, total_labels))
 
 def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_list):
   if(max_depth <= -1):
@@ -164,9 +164,9 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
       n_entropy = 0
       y_entropy = 0
       if (num_00 + num_01 > 0):
-        n_entropy = calc_entry(num_00, num_01, (num_00 + num_01))
+        n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
       if (num_10 + num_11 > 0):
-        y_entropy = calc_entry(num_10, num_11, (num_10 + num_11))
+        y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
       #print(num_00, num_01, num_10, num_11, n_entropy, y_entropy, len(cross_index))
       if(len(cross_index) > 1):
         h_node = ((((num_00 + num_01) / len(cross_index)) * n_entropy) +
@@ -215,9 +215,9 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
       rn_entropy = 0
       ry_entropy = 0
       if (n_00 + n_01 > 0):
-        rn_entropy = calc_entry(n_00, n_01, (n_00 + n_01))
+        rn_entropy = calc_entropy(n_00, n_01, (n_00 + n_01))
       if (n_10 + n_11 > 0):
-        ry_entropy = calc_entry(n_10, n_11, (n_10 + n_11))
+        ry_entropy = calc_entropy(n_10, n_11, (n_10 + n_11))
       #print(n_00, n_01, n_10, n_11, ry_entropy, rn_entropy, len(c_index))
       if(len(c_index) > 1):
         h_right = ((((n_00 + n_01) / len(c_index)) * rn_entropy) +
@@ -306,10 +306,10 @@ def find_root(features, labels, tree_entropy, max_depth):
     n_entropy = 0
     y_entropy = 0
     if(num_00 + num_01 > 0):
-      n_entropy = calc_entry(num_00, num_01, (num_00 + num_01))
+      n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
     #print(n_entropy, end=' ')
     if(num_10 + num_11 > 0):
-      y_entropy = calc_entry(num_10, num_11, (num_10 + num_11))
+      y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
     #print(y_entropy, end=' ')
 
     h_node = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
@@ -329,7 +329,7 @@ def find_root(features, labels, tree_entropy, max_depth):
           max_entropy = (IG, h_node, x, 1, 1)
   return max_entropy
 
-def calc_entry(n, y, total):
+def calc_entropy(n, y, total):
   if(n == 0 and y > 0):
     return - 0 - (((y/total) * math.log(y/total, 2)))
   elif(y == 0 and n > 0):
@@ -346,7 +346,7 @@ def DT_test_binary(X,Y,DT):
       if(Y[labels] == DT.label):
         num_correct = num_correct + 1
     #print((num_correct) / (Y.shape[0]))
-    return (num_correct/ Y.shape[0])
+    return (num_correct/ Y.shape[0]) * 100
 
   num_correct = 0
   this_node = DT.root
@@ -365,7 +365,7 @@ def DT_test_binary(X,Y,DT):
       num_correct = num_correct + DT_test_binary_helper(X, Y, this_node.node_right)
 
   #print((num_correct)/(Y.shape[0]))
-  return(num_correct/ Y.shape[0])
+  return(num_correct/ Y.shape[0]) * 100
 
 
 def DT_test_binary_helper(sample, label, this_node):
@@ -434,7 +434,7 @@ def DT_make_prediction_helper(x,this_node):
       return DT_make_prediction_helper(x, this_node.node_right)
 
 
-""" TEST AREA """
+""" TEST AREA 
 X = np.array([[0,1,0,1],[1,1,1,1],[0,0,0,1]])
 Y = np.array([[1], [0], [0]])
 max_depth = -1
@@ -460,3 +460,5 @@ prediction = DT_make_prediction(validation[1], dt_tree)
 print("prediction is: ", prediction)
 prediction = DT_make_prediction(validation[2], dt_tree)
 print("prediction is: ", prediction)
+
+"""
