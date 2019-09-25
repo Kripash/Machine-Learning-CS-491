@@ -74,16 +74,21 @@ accuracy_tree1 = dt.DT_test_binary(test_set_x, test_set_y, set_tree1)
 print("******************************************************************************************")
 
 set_tree2 = dt.DT_train_binary(set_x2, set_y2, 5)
-#set_tree2.debug()
+set_tree2.debug()
 accuracy_tree2 = dt.DT_test_binary(test_set_x, test_set_y, set_tree2)
-#print(accuracy_tree2)
+print(accuracy_tree2)
 print("******************************************************************************************")
 
 
 
 set_tree3 = dt.DT_train_binary(set_x3, set_y3, 5)
-set_tree3.debug()
+#set_tree3.debug()
 accuracy_tree3 = dt.DT_test_binary(test_set_x, test_set_y, set_tree3)
-print(accuracy_tree3)
+#print(accuracy_tree3)
 print("******************************************************************************************")
 
+
+
+for votes in range(test_set_y.shape[0]):
+  prediction = dt.DT_make_prediction(test_set_x[votes], set_tree3)
+  print("sample : ", votes, " = " , prediction)
