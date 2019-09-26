@@ -966,3 +966,16 @@ def DT_test_real_helper(sample, label, this_node):
     num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_right)
 
   return num_correct
+
+
+def DT_train_real_best(X_train, Y_train, X_val, Y_val):
+  best_tree = (None, -1)
+  for depth in range(X_train.shape[1]):
+    tree = DT_train_real(X_train, Y_train, depth)
+    accuracy = DT_test_real(X_val, Y_val, tree)
+    #tree.debug()
+    #print(accuracy, tree.max_depth)
+    if(accuracy > best_tree[1]):
+      best_tree = (tree, accuracy)
+      #print ("best tree: " , accuracy)
+  return (best_tree[0])
