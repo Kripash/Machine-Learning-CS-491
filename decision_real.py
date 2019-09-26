@@ -91,9 +91,9 @@ class Tree():
     print("Finishing Printing Tree!")
 
 
-"""DT_Train_binary
-   Train the binary tree based on the entropy of the entire tree and the root ndoe split if there is one. 
-   AS long as there are features to split on and the IG is not 0, then call entropy_subtree to build the rest 
+"""DT_train_real
+   Train the binary tree based on the entropy of the entire tree and the root node split if there is one. 
+   As long as there are features to split on and the IG is not 0, then call entropy_subtree to build the rest 
    of the tree. 
    Return the binary tree for all 3 cases.
    The cases are: 
@@ -101,7 +101,7 @@ class Tree():
    2. you only have to split at the root node so return that 
    3. There are more splits that can be done so compute the splits, build the tree and return that tree.
 """
-def DT_train_binary(X,Y, max_depth):
+def DT_train_real(X,Y, max_depth):
   feats = []
   #set up all of the possible features
   for features in range(X.shape[1]):
@@ -433,127 +433,3 @@ def calc_entropy(n, y, total):
     return -((n / total) * math.log(n/total, 2))- 0
   else:
     return -((n / total) * math.log(n/total, 2)) - ((y/total) * math.log(y/total, 2))
-
-
-""" DT_test_binary: 
-    1. The function first checks to see if the max_depth of the tree is 0, if it is, it returns the amount of times 
-        the label shows up in the test sample
-    2. Otherwise, it goes through the samples and then recursively traverses until there is not a node left to traverse 
-        properly for the specific sample and then counts the number of correct labels and returns the value/total labels
-        * 100 for the percentage 
-"""
-def DT_test_binary(X,Y,DT):
-  #print(Y.shape[0])
-  if(DT.max_depth == 0):
-    num_correct = 0
-    for labels in range(Y.shape[0]):
-      if(Y[labels] == DT.label):
-        num_correct = num_correct + 1
-    #print((num_correct) / (Y.shape[0]))
-    return (num_correct/ Y.shape[0]) * 100
-  #recrusively check which direction and feature to use and then return if it is correct, otherwise, keep going until
-  #there is no traversal left within the sample
-  num_correct = 0
-  this_node = DT.root
-  for x in range(Y.shape[0]):
-    this_feature = this_node.feature
-    direction = X[x][this_feature]
-    if(direction == 0 and this_node.node_left == None):
-      if(this_node.L_value == Y[x]):
-        num_correct = num_correct + 1
-    elif(direction == 0 and this_node.node_left != None):
-      num_correct = num_correct + DT_test_binary_helper(X[x], Y[x], this_node.node_left)
-    elif(direction == 1 and this_node.node_right == None):
-      if(this_node.R_value == Y[x]):
-        num_correct = num_correct + 1
-    elif(direction == 1 and this_node.node_right != None):
-      num_correct = num_correct + DT_test_binary_helper(X[x], Y[x], this_node.node_right)
-
-  #print((num_correct)/(Y.shape[0]))
-  return(num_correct/ Y.shape[0]) * 100
-
-""" DT_test_binary_helper: 
-    1. Go through the sample and then recursively traverses until there is not a node left to traverse 
-        properly for the specific sample and then counts the number of correct labels for each sample set
-"""
-def DT_test_binary_helper(sample, label, this_node):
-  #print("In DT_test_binary_helper")
-  this_feature = this_node.feature
-  direction = sample[this_feature]
-  # recrusively check which direction and feature to use and then return if it is correct, otherwise, keep going until
-  # there is no traversal left within the sample
-  num_correct = 0
-  if (direction == 0 and this_node.node_left == None):
-    if (this_node.L_value == label):
-      num_correct = num_correct + 1
-  elif (direction == 0 and this_node.node_left != None):
-    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_left)
-  elif (direction == 1 and this_node.node_right == None):
-    if (this_node.R_value == label):
-      num_correct = num_correct + 1
-  elif (direction == 1 and this_node.node_right != None):
-    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_right)
-
-  return num_correct
-
-
-""" DT_train_binary_best:
-    1. Iterates through the number of features in the tree since that is the theoretical max depth and then 
-        calculates the accuracy for depth for the tree and if the tree has a better accuracy than what is previously 
-        stored/track, that is the tree that represents the best accuracy of the data set. 
-"""
-def DT_train_binary_best(X_train, Y_train, X_val, Y_val):
-  best_tree = (None, -1)
-  for depth in range(X_train.shape[1]):
-    tree = DT_train_binary(X_train, Y_train, depth)
-    accuracy = DT_test_binary(X_val, Y_val, tree)
-    #tree.debug()
-    #print(accuracy, tree.max_depth)
-    if(accuracy > best_tree[1]):
-      best_tree = (tree, accuracy)
-      #print ("best tree: " , accuracy)
-  return (best_tree[0])
-
-
-""" DT_make_prediction:
-    1. The function first checks to see if the max_depth of the tree is 0, if it is, it returns the label stored.
-    2. Otherwise, it goes through the sample and then recursively traverses until there is not a node left to traverse 
-        properly for the specific sample and then depending on the direction that was traveresed, it returns either the 
-        left of right value of the node/leaf.
-"""
-def DT_make_prediction(x, DT):
-  if(DT.max_depth == 0):
-    return DT.label
-  feature = DT.root.feature
-  direction = x[feature]
-  if(direction == 0):
-    if(DT.root.node_left == None):
-      return DT.root.L_value
-    elif(DT.root.node_left != None):
-      return DT_make_prediction_helper(x, DT.root.node_left)
-  elif(direction == 1):
-    if(DT.root.node_right == None):
-      return DT.root.R_value
-    elif(DT.root.node_right != None):
-      return DT_make_prediction_helper(x, DT.root.node_right)
-
-
-""" DT_make_prediction_helper:
-    The function goes through the sample and then recursively traverses until there is not a node left to traverse 
-    properly for the specific sample and then depending on the direction that was traveresed, it returns either the 
-    left of right value of the node/leaf.
-"""
-def DT_make_prediction_helper(x,this_node):
-  feature = this_node.feature
-  direction = x[feature]
-  if(direction == 0):
-    if(this_node.node_left == None):
-      return this_node.L_value
-    elif(this_node.node_right != None):
-      return DT_make_prediction_helper(x, this_node.node_left)
-  elif(direction == 1):
-    if(this_node.node_right == None):
-      return this_node.R_value
-    elif(this_node.node_right != None):
-      return DT_make_prediction_helper(x, this_node.node_right)
-
