@@ -559,6 +559,9 @@ def DT_make_prediction_helper(x,this_node):
     elif(this_node.node_right != None):
       return DT_make_prediction_helper(x, this_node.node_right)
 
+
+
+
 def DT_train_real(X,Y, max_depth):
   feats = []
   #set up all of the possible features
@@ -585,8 +588,8 @@ def DT_train_real(X,Y, max_depth):
   #if the entropy is 0, there is nothing left to split on so we return the tree, otherwise call entropy_subtree to
   #build the tree recursively and return the tree
   if(DT_binary_tree.root.h_value == 0):
-    #print ("Done")
-    #DT_binary_tree.debug()
+    print ("Done")
+    DT_binary_tree.debug()
     return DT_binary_tree
   else:
     features_list[DT_binary_tree.root.feature] = 1
@@ -609,9 +612,10 @@ def find_root_real(features, labels, tree_entropy, max_depth):
       return 1
 
   max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
-  #print(max_entropy)
+  print(max_entropy)
   for x in range(features.shape[1]):
-    #print(x)
+    print(x)
+    #store number of samples w feature value 0/1 with label 0/1
     num_00 = 0
     num_01 = 0
     num_10 = 0
@@ -632,13 +636,13 @@ def find_root_real(features, labels, tree_entropy, max_depth):
     #calculate the entropy of each possible feature for the root node and split.
     n_entropy = 0
     y_entropy = 0
-    #print(x, num_00, num_01, num_10, num_11)
+    print(x, num_00, num_01, num_10, num_11)
     if(num_00 + num_01 > 0):
       n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
-    #print(n_entropy, end=' ')
+    print(n_entropy, end=' ')
     if(num_10 + num_11 > 0):
       y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
-    #print(y_entropy, end=' ')
+    print(y_entropy, end=' ')
 
     h_node = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
                         (((num_10 + num_11)/(labels.shape[0])) * y_entropy) )
@@ -658,12 +662,12 @@ def find_root_real(features, labels, tree_entropy, max_depth):
           max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
   return max_entropy
 
-
 def calc_threshold(X, Y, feature, tree_entropy):
+  print("started")
   max_entropy = 0
   max_entropy_threshold = 0
   print(max_entropy)
-  #print(x)
+  print(x)
   num_00 = 0
   num_01 = 0
   num_10 = 0
@@ -689,10 +693,10 @@ def calc_threshold(X, Y, feature, tree_entropy):
     y_entropy = 0
     if(num_00 + num_01 > 0):
       n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
-    #print(n_entropy, end=' ')
+    print(n_entropy, end=' ')
     if(num_10 + num_11 > 0):
       y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
-    #print(y_entropy, end=' ')
+    print(y_entropy, end=' ')
 
     #Information gain of node when splitting samples of a feature at a certain threshold
     h_thresh = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
@@ -703,4 +707,6 @@ def calc_threshold(X, Y, feature, tree_entropy):
     if(IG > max_entropy[0]):
       max_entropy_threshold = threshold
 
+  print("mmax_entropy_threshold", max_entropy_threshold)
   return max_entropy_threshold
+
