@@ -433,3 +433,38 @@ def calc_entropy(n, y, total):
     return -((n / total) * math.log(n/total, 2))- 0
   else:
     return -((n / total) * math.log(n/total, 2)) - ((y/total) * math.log(y/total, 2))
+
+def calc_threshold(X, feature):
+  sample_count = X.shape[0]
+  feature_values = []
+  for x in range(sample_count):
+    feature_values.append(X[x][feature])
+  values_sorted = np.sort(feature_values)
+  print(values_sorted)
+
+  thresholds = []
+  for x in range(sample_count-1):
+    thresholds.append((values_sorted[x+1]+values_sorted[x])/2)
+  thresholds_array = np.array(thresholds)
+  thresholds_count = thresholds_array.shape[0]
+  print(thresholds_array)
+
+
+  n = 0
+  y = 0
+  entropies = []
+  for t in range(thresholds_count):
+    for x in range(sample_count):
+      if(values_sorted[x] >= thresholds_array[t]):
+        y += 1
+      else:
+        n += 1
+    entropies.append( calc_entropy(n, y, thresholds_count) )
+  entropies_array = np.array(entropies)
+  print(entropies_array)
+  print(thresholds_array[entropies_array.argmax()])
+  return thresholds_array[entropies_array.argmax()]
+
+  
+
+
