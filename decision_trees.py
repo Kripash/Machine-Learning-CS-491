@@ -929,15 +929,15 @@ def DT_test_real(X, Y, DT):
   for x in range(Y.shape[0]):
     this_feature = this_node.feature
     direction = X[x][this_feature]
-    if (direction <= DT.root.thresh and this_node.node_left == None):
+    if (direction < DT.root.thresh and this_node.node_left == None):
       if (this_node.L_value == Y[x]):
         num_correct = num_correct + 1
-    elif (direction <= DT.root.thresh and this_node.node_left != None):
+    elif (direction < DT.root.thresh and this_node.node_left != None):
       num_correct = num_correct + DT_test_real_helper(X[x], Y[x], this_node.node_left)
-    elif (direction > DT.root.thresh and this_node.node_right == None):
+    elif (direction >= DT.root.thresh and this_node.node_right == None):
       if (this_node.R_value == Y[x]):
         num_correct = num_correct + 1
-    elif (direction > DT.root.thresh and this_node.node_right != None):
+    elif (direction >= DT.root.thresh and this_node.node_right != None):
       num_correct = num_correct + DT_test_real_helper(X[x], Y[x], this_node.node_right)
 
   # print((num_correct)/(Y.shape[0]))
@@ -950,15 +950,15 @@ def DT_test_real_helper(sample, label, this_node):
   # recrusively check which direction and feature to use and then return if it is correct, otherwise, keep going until
   # there is no traversal left within the sample
   num_correct = 0
-  if (direction <= this_node.thresh and this_node.node_left == None):
+  if (direction < this_node.thresh and this_node.node_left == None):
     if (this_node.L_value == label):
       num_correct = num_correct + 1
-  elif (direction <= this_node.thresh and this_node.node_left != None):
+  elif (direction < this_node.thresh and this_node.node_left != None):
     num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_left)
-  elif (direction > this_node.thresh and this_node.node_right == None):
+  elif (direction >= this_node.thresh and this_node.node_right == None):
     if (this_node.R_value == label):
       num_correct = num_correct + 1
-  elif (direction > this_node.thresh and this_node.node_right != None):
+  elif (direction >= this_node.thresh and this_node.node_right != None):
     num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_right)
 
   return num_correct

@@ -104,10 +104,10 @@ Y_real = np.array( [ [1], [1], [1], [1], [1], [1], [1], [1], [0], [0], [0], [0],
 max_depth_real = -1
 
 tree_real = dt.DT_train_real(X_real, Y_real, max_depth_real)
-tree_real.debug()
+#tree_real.debug()
 
 accuracy_real = dt.DT_test_real(X_real, Y_real, tree_real)
-print("accuracy_real: ", accuracy_real)
+#print("accuracy_real: ", accuracy_real)
 
 #print("******************************************************************************************")
 
