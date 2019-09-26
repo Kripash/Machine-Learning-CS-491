@@ -56,6 +56,7 @@ class Node():
     print("node R_value: ", self.R_value)
     print("left node: " , self.node_left)
     print("right node",self.node_right)
+    print("node thresh: ", self.thresh)
     print("path: \n", self.path)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     if(self.node_right != None):
@@ -590,8 +591,8 @@ def DT_train_real(X,Y, max_depth):
   #if the entropy is 0, there is nothing left to split on so we return the tree, otherwise call entropy_subtree to
   #build the tree recursively and return the tree
   if(DT_real_tree.root.h_value == 0):
-    print ("Done")
-    DT_real_tree.debug()
+    #print ("Done")
+    #DT_real_tree.debug()
     return DT_real_tree
   else:
     features_list[DT_real_tree.root.feature] = 1
@@ -825,7 +826,7 @@ def find_root_real(features, labels, tree_entropy, max_depth):
     num_11 = 0
     #Calculate threshold for feature x
     threshold = calc_threshold(features,labels,x,tree_entropy)
-    print("feature ", x, " threshold: ", threshold)
+    #print("feature ", x, " threshold: ", threshold)
     for y in range(labels.shape[0]):
       if(features[y][x] < threshold and labels[y] == 0):
         num_00 = num_00 + 1
@@ -865,13 +866,13 @@ def find_root_real(features, labels, tree_entropy, max_depth):
           max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy, threshold)
         elif (num_11 > num_10):
           max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
-  print(max_entropy, "\n")
+  #print(max_entropy, "\n")
   return max_entropy
 
 def calc_threshold(features, labels, feature, tree_entropy):
   max_entropy = 0
   max_entropy_threshold = 0
-  print(max_entropy)
+  #print(max_entropy)
   num_00 = 0
   num_01 = 0
   num_10 = 0
