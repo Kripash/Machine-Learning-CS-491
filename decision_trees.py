@@ -579,7 +579,8 @@ def DT_train_real(X,Y, max_depth):
     return DT_binary_tree
 
   #otherwise find the root node split
-  root = find_root(X, Y, entropy_start, max_depth)
+  print(X)
+  root = find_root_real(X, Y, entropy_start, max_depth)
   root_node = Node(root[1], None, None, root[2], root[3], root[4])
   root_node.h_left = root[5]
   root_node.h_right = root[6]
@@ -598,6 +599,7 @@ def DT_train_real(X,Y, max_depth):
     return DT_binary_tree
 
 def find_root_real(features, labels, tree_entropy, max_depth):
+  print(features.shape[1])
   if(max_depth == 0):
     num_0 = 0
     num_1 = 0
@@ -610,18 +612,15 @@ def find_root_real(features, labels, tree_entropy, max_depth):
       return 0
     elif(num_1 > num_0):
       return 1
-
   max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
-  print(max_entropy)
   for x in range(features.shape[1]):
-    print(x)
     #store number of samples w feature value 0/1 with label 0/1
     num_00 = 0
     num_01 = 0
     num_10 = 0
     num_11 = 0
     #Calculate threshold for feature x
-    threshold = calc_threshold(X,Y,x,tree_entropy)
+    threshold = calc_threshold(features,labels,x,tree_entropy)
     for y in range(labels.shape[0]):
       if(features[y][x] < threshold and labels[y] == 0):
         num_00 = num_00 + 1
@@ -662,12 +661,10 @@ def find_root_real(features, labels, tree_entropy, max_depth):
           max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
   return max_entropy
 
-def calc_threshold(X, Y, feature, tree_entropy):
-  print("started")
+def calc_threshold(features, labels, feature, tree_entropy):
   max_entropy = 0
   max_entropy_threshold = 0
   print(max_entropy)
-  print(x)
   num_00 = 0
   num_01 = 0
   num_10 = 0
@@ -704,7 +701,7 @@ def calc_threshold(X, Y, feature, tree_entropy):
 
     #If the IG gain is greater than the current one, set the returned threshold to that
     IG = tree_entropy - h_thresh
-    if(IG > max_entropy[0]):
+    if(IG > max_entropy):
       max_entropy_threshold = threshold
 
   print("mmax_entropy_threshold", max_entropy_threshold)

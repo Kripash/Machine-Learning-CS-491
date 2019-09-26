@@ -68,7 +68,7 @@ test_set_y = np.array([[0], [1], [0]])
 
 max = 5
 set_tree1 = dt.DT_train_binary(set_x1, set_y1, 5)
-set_tree1.debug()
+#set_tree1.debug()
 accuracy_tree1 = dt.DT_test_binary(test_set_x, test_set_y, set_tree1)
 print(accuracy_tree1)
 print("******************************************************************************************")
@@ -101,7 +101,8 @@ Y_real = np.array( [ [1], [1], [1], [0], [0], [1], [1], [0], [1], [0], [1], [0],
 
 max_depth_real = -1
 
-print("******************************************************************************************")
+print("*********************************Start*****************************************************")
 tree_real = dt.DT_train_real(X_real, Y_real, max_depth_real)
 tree_real.debug()
 print("******************************************************************************************")
+
