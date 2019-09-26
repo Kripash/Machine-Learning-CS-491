@@ -120,8 +120,8 @@ def DT_train_binary(X,Y, max_depth):
   #otherwise find the root node split
   root = find_root(X, Y, entropy_start, max_depth)
   root_node = Node(root[1], None, None, root[2], root[3], root[4])
-  root_node.h_left = root_node.h_value
-  root_node.h_right = root_node.h_value
+  root_node.h_left = root[5]
+  root_node.h_right = root[6]
   DT_binary_tree = Tree(max_depth)
   DT_binary_tree.set_root(root_node)
   #if the entropy is 0, there is nothing left to split on so we return the tree, otherwise call entropy_subtree to
@@ -268,6 +268,7 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
       for a in range(labels.shape[0]):
         c_index.append(a)
       c_index_copy = copy.copy(c_index)
+
       # find which samples can be used for the current path and feature
       for b in range(len(right_node.path)):
         right_feat_index = right_node.path[b][0]
@@ -323,7 +324,7 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
   #recursion_left if there is actually something left to split on and check for, meaning that the entropy has been
   #changed to our data type and wthe IG is not 0. Set the left node values that were split and then
   #go ahead and recrusively check the left subtree and build it.
-  if(max_entropy[2] != -1):
+  if(max_entropy[2] != -1 and curr_node.h_left > 0):
     features_left = copy.copy(features_list)
     features_left[max_entropy[2]] = 1
     #print(features_left)
@@ -341,7 +342,7 @@ def entropy_subtree(features, labels, max_depth, DT_tree, curr_node, features_li
   #recursion_right if there is actually something left to split on and check for, meaning that the entropy has been
   #changed to our data type and wthe IG is not 0. Set the right node values that were split and then
   #go ahead and recrusively check the right subtree and build it.
-  if(right_entropy[2] != -1):
+  if(right_entropy[2] != -1 and curr_node.h_right > 0):
     features_right = copy.copy(features_list)
     features_right[right_entropy[2]] = 1
     #print(features_right)
@@ -375,7 +376,7 @@ def find_root(features, labels, tree_entropy, max_depth):
     elif(num_1 > num_0):
       return 1
 
-  max_entropy = [ float(-math.inf),-1, -1, -1, -1]
+  max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
   #print(max_entropy)
   for x in range(features.shape[1]):
     #print(x)
@@ -397,6 +398,7 @@ def find_root(features, labels, tree_entropy, max_depth):
     #calculate the entropy of each possible feature for the root node and split.
     n_entropy = 0
     y_entropy = 0
+    #print(x, num_00, num_01, num_10, num_11)
     if(num_00 + num_01 > 0):
       n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
     #print(n_entropy, end=' ')
@@ -412,14 +414,14 @@ def find_root(features, labels, tree_entropy, max_depth):
     if(IG > max_entropy[0]):
       if(num_00 >= num_01):
         if(num_10 >= num_11):
-          max_entropy = (IG, h_node, x, 0, 0)
+          max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy)
         elif(num_11 > num_10):
-          max_entropy = (IG, h_node, x, 0, 1)
+          max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy)
       elif (num_01 > num_00):
         if (num_10 >= num_11):
-          max_entropy = (IG, h_node, x, 1, 0)
+          max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy)
         elif (num_11 > num_10):
-          max_entropy = (IG, h_node, x, 1, 1)
+          max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
   return max_entropy
 
 """ calc_entropy: 
