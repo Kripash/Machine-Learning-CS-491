@@ -559,3 +559,148 @@ def DT_make_prediction_helper(x,this_node):
     elif(this_node.node_right != None):
       return DT_make_prediction_helper(x, this_node.node_right)
 
+def DT_train_real(X,Y, max_depth):
+  feats = []
+  #set up all of the possible features
+  for features in range(X.shape[1]):
+    feats.append(0)
+  features_list = np.array(feats)
+
+  #get the entropy of the entire tree
+  entropy_start = entropy_tree(Y)
+  #if max_depth is 0, take the label that occurs the most and return the tree with that
+  if(max_depth == 0):
+    initial_label = find_root_real(X, Y, entropy_start, max_depth)
+    DT_binary_tree = Tree(max_depth)
+    DT_binary_tree.label = initial_label
+    return DT_binary_tree
+
+  #otherwise find the root node split
+  root = find_root(X, Y, entropy_start, max_depth)
+  root_node = Node(root[1], None, None, root[2], root[3], root[4])
+  root_node.h_left = root[5]
+  root_node.h_right = root[6]
+  DT_binary_tree = Tree(max_depth)
+  DT_binary_tree.set_root(root_node)
+  #if the entropy is 0, there is nothing left to split on so we return the tree, otherwise call entropy_subtree to
+  #build the tree recursively and return the tree
+  if(DT_binary_tree.root.h_value == 0):
+    #print ("Done")
+    #DT_binary_tree.debug()
+    return DT_binary_tree
+  else:
+    features_list[DT_binary_tree.root.feature] = 1
+    entropy_subtree(X, Y, max_depth - 1, DT_binary_tree, root_node, copy.copy(features_list))
+    #DT_binary_tree.debug()
+    return DT_binary_tree
+
+def find_root_real(features, labels, tree_entropy, max_depth):
+  if(max_depth == 0):
+    num_0 = 0
+    num_1 = 0
+    for x in range(labels.shape[0]):
+      if(labels[x][0] == 0):
+        num_0 = num_0 + 1
+      elif(labels[x][0] == 1):
+        num_1 = num_1 + 1
+    if(num_0 >= num_1):
+      return 0
+    elif(num_1 > num_0):
+      return 1
+
+  max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
+  #print(max_entropy)
+  for x in range(features.shape[1]):
+    #print(x)
+    num_00 = 0
+    num_01 = 0
+    num_10 = 0
+    num_11 = 0
+    #Calculate threshold for feature x
+    threshold = calc_threshold(X,Y,x,tree_entropy)
+    for y in range(labels.shape[0]):
+      if(features[y][x] < threshold and labels[y] == 0):
+        num_00 = num_00 + 1
+      if(features[y][x] < threshold and labels[y] == 1):
+        num_01 = num_01 + 1
+
+      if(features[y][x] >= threshold and labels[y] == 0):
+        num_10 = num_10 + 1
+      if(features[y][x] >= threshold and labels[y] == 1):
+        num_11 = num_11 + 1
+
+    #calculate the entropy of each possible feature for the root node and split.
+    n_entropy = 0
+    y_entropy = 0
+    #print(x, num_00, num_01, num_10, num_11)
+    if(num_00 + num_01 > 0):
+      n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
+    #print(n_entropy, end=' ')
+    if(num_10 + num_11 > 0):
+      y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
+    #print(y_entropy, end=' ')
+
+    h_node = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
+                        (((num_10 + num_11)/(labels.shape[0])) * y_entropy) )
+    #If the IG gain is greater than the current one, default set to -inf, then set this as the root node to split on
+    #and return the appropriate values
+    IG = tree_entropy - h_node
+    if(IG > max_entropy[0]):
+      if(num_00 >= num_01):
+        if(num_10 >= num_11):
+          max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy)
+        elif(num_11 > num_10):
+          max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy)
+      elif (num_01 > num_00):
+        if (num_10 >= num_11):
+          max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy)
+        elif (num_11 > num_10):
+          max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
+  return max_entropy
+
+
+def calc_threshold(X, Y, feature, tree_entropy):
+  max_entropy = 0
+  max_entropy_threshold = 0
+  print(max_entropy)
+  #print(x)
+  num_00 = 0
+  num_01 = 0
+  num_10 = 0
+  num_11 = 0
+  #for every sample value of a feature
+  for z in range(features.shape[0]):
+    #make that sample's value in that feature the threshold
+    threshold = features[z][feature]
+    #split based on that threshold
+    for y in range(labels.shape[0]):
+      if(features[y][feature] < threshold and labels[y] == 0):
+        num_00 = num_00 + 1
+      if(features[y][feature] < threshold and labels[y] == 1):
+        num_01 = num_01 + 1
+
+      if(features[y][feature] >= threshold and labels[y] == 0):
+        num_10 = num_10 + 1
+      if(features[y][feature] >= threshold and labels[y] == 1):
+        num_11 = num_11 + 1
+
+    #calculate the entropy of using that threshold for the feature and split.
+    n_entropy = 0
+    y_entropy = 0
+    if(num_00 + num_01 > 0):
+      n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
+    #print(n_entropy, end=' ')
+    if(num_10 + num_11 > 0):
+      y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
+    #print(y_entropy, end=' ')
+
+    #Information gain of node when splitting samples of a feature at a certain threshold
+    h_thresh = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
+                        (((num_10 + num_11)/(labels.shape[0])) * y_entropy) )
+
+    #If the IG gain is greater than the current one, set the returned threshold to that
+    IG = tree_entropy - h_thresh
+    if(IG > max_entropy[0]):
+      max_entropy_threshold = threshold
+
+  return max_entropy_threshold
