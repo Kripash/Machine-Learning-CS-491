@@ -27,6 +27,7 @@ class Node():
     self.L_value = copy.copy(left)
     self.R_value = copy.copy(right)
     self.path = []
+    self.thresh = None
 
   def set_left(self, left):
     self.node_left = left
@@ -574,32 +575,235 @@ def DT_train_real(X,Y, max_depth):
   #if max_depth is 0, take the label that occurs the most and return the tree with that
   if(max_depth == 0):
     initial_label = find_root_real(X, Y, entropy_start, max_depth)
-    DT_binary_tree = Tree(max_depth)
-    DT_binary_tree.label = initial_label
-    return DT_binary_tree
+    DT_real_tree = Tree(max_depth)
+    DT_real_tree.label = initial_label
+    return DT_real_tree
 
   #otherwise find the root node split
-  print(X)
   root = find_root_real(X, Y, entropy_start, max_depth)
   root_node = Node(root[1], None, None, root[2], root[3], root[4])
   root_node.h_left = root[5]
   root_node.h_right = root[6]
-  DT_binary_tree = Tree(max_depth)
-  DT_binary_tree.set_root(root_node)
+  root_node.thresh = copy.copy(root[7])
+  DT_real_tree = Tree(max_depth)
+  DT_real_tree.set_root(root_node)
   #if the entropy is 0, there is nothing left to split on so we return the tree, otherwise call entropy_subtree to
   #build the tree recursively and return the tree
-  if(DT_binary_tree.root.h_value == 0):
+  if(DT_real_tree.root.h_value == 0):
     print ("Done")
-    DT_binary_tree.debug()
-    return DT_binary_tree
+    DT_real_tree.debug()
+    return DT_real_tree
   else:
-    features_list[DT_binary_tree.root.feature] = 1
-    entropy_subtree(X, Y, max_depth - 1, DT_binary_tree, root_node, copy.copy(features_list))
-    #DT_binary_tree.debug()
-    return DT_binary_tree
+    features_list[DT_real_tree.root.feature] = 1
+    entropy_subtree_real(X, Y, max_depth - 1, DT_real_tree, root_node, copy.copy(features_list))
+    #DT_real_tree.debug()
+    return DT_real_tree
+
+def entropy_subtree_real(features, labels, max_depth, DT_tree, curr_node, features_list):
+  if(max_depth <= -1):
+    feat_count = 0
+    for x in features_list:
+      if x == 0:
+        feat_count = feat_count + 1
+    if feat_count == 0:
+      return
+  elif(max_depth == 0):
+    return
+
+  """" Otherwise We need to split somewhere if possible """
+  max_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
+  right_entropy = [ float(-math.inf),-1, -1, -1, -1, -1, -1]
+
+  #holds the entropy values for the left and right sub trees
+  n_entropy = 0
+  y_entropy = 0
+  thresh = 0
+  rn_entropy = 0
+  ry_entropy = 0
+  r_thresh = 0
+
+  for x in range(features.shape[1]):
+    local_tree = copy.copy(DT_tree)
+    #if the feature has not been used yet, go ahead and try to split on it
+    if(features_list[x] == 0):
+      """ THIS IS ONLY FOR THE LEFT SIDE """
+      sub_node = Node(-1, None, None, x, None, None)
+      sub_node.copy_path(curr_node.path)
+      #append the current path taken to the curr node and add a 0 since we will be going left
+      sub_node.append_path((curr_node.feature, 0))
+      num_00 = 0
+      num_01 = 0
+      num_10 = 0
+      num_11 = 0
+      cross_index = []
+      #find which samples can be used for the current path and feature
+      for y in range(labels.shape[0]):
+        cross_index.append(y)
+      cross_index_copy = copy.copy(cross_index)
+      for i in range(len(sub_node.path)):
+        feature_index = sub_node.path[i][0]
+        feature_val = sub_node.path[i][1]
+        for y in cross_index:
+          if(features[y][feature_index] != feature_val):
+            try:
+              cross_index_copy.remove(y)
+            except:
+              pass
+              #print("left", end = ' ')
+              #print(y, cross_index_copy)
+      cross_index = copy.copy(cross_index_copy)
+      #print(cross_index)
+
+      #Calculate threshold for feature x
+      threshold = calc_threshold(features,labels,x,curr_node.h_left)
+      #for the current samples left, find the left traversal no and yes
+      #find the right traversal no and yes for
+      #calculate the entropy of each branch
+      for y in cross_index:
+        #print(y,x, features[y][x])
+        if(features[y][x] < threshold and labels[y] == 0):
+          num_00 = num_00 + 1
+        if(features[y][x] < threshold and labels[y] == 1):
+          num_01 = num_01 + 1
+        if(features[y][x] >= threshold and labels[y] == 0):
+          num_10 = num_10 + 1
+        if(features[y][x] >= threshold and labels[y] == 1):
+          num_11 = num_11 + 1
+
+      #calculate the entropy of a branch if there are values to split on
+      if (num_00 + num_01 > 0):
+        n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
+      if (num_10 + num_11 > 0):
+        y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
+      #print(num_00, num_01, num_10, num_11, n_entropy, y_entropy, len(cross_index))
+      if(len(cross_index) > 1):
+        h_node = ((((num_00 + num_01) / len(cross_index)) * n_entropy) +
+                  (((num_10 + num_11) / len(cross_index)) * y_entropy))
+
+        #calculate the Information gain and if the IG is better than the current one, use the current node
+        #and store the values to create the node
+        IG = curr_node.h_left - h_node
+        if(IG > max_entropy[0]):
+          if (num_00 >= num_01):
+            if (num_10 >= num_11):
+              max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy, threshold)
+            elif (num_11 > num_10):
+              max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy, threshold)
+          elif (num_01 > num_00):
+            if (num_10 >= num_11):
+              max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy, threshold)
+            elif (num_11 > num_10):
+              max_entropy = (IG, h_node, x, 1, 1, n_entropy, y_entropy, threshold)
+      """ END LEFT SIDE"""
+      """ Computer the Right side now """
+      right_node = Node(-1, None, None, x, None, None)
+      right_node.copy_path(curr_node.path)
+      # append the current path taken to the curr node and add a 1 since we will be going right
+      right_node.append_path((curr_node.feature, 1))
+      n_00 = 0
+      n_01 = 0
+      n_10 = 0
+      n_11 = 0
+      c_index = []
+      #find which samples can be used for the current path and feature
+      for a in range(labels.shape[0]):
+        c_index.append(a)
+      c_index_copy = copy.copy(c_index)
+
+      # find which samples can be used for the current path and feature
+      for b in range(len(right_node.path)):
+        right_feat_index = right_node.path[b][0]
+        right_feat_val = right_node.path[b][1]
+        for c in c_index:
+          if(features[c][right_feat_index] != right_feat_val):
+            try:
+              c_index_copy.remove(c)
+            except:
+              pass
+              #print("right", end = ' ')
+              #print(c, cross_index_copy)
+      c_index = copy.copy(c_index_copy)
+      #Calculate threshold for feature x
+      r_threshold = calc_threshold(features,labels,x,curr_node.h_right)
+      # for the current samples left, find the left traversal no and yes
+      # find the right traversal no and yes for
+      # calculate the entropy of each branch
+      for c in c_index:
+        if (features[c][x] < r_threshold and labels[c] == 0):
+          n_00 = n_00 + 1
+        if (features[c][x] < r_threshold and labels[c] == 1):
+          n_01 = n_01 + 1
+        if (features[c][x] >= r_threshold and labels[c] == 0):
+          n_10 = n_10 + 1
+        if (features[c][x] >= r_threshold and labels[c] == 1):
+          n_11 = n_11 + 1
+
+      # calculate the entropy of a branch if there are values to split on
+      if (n_00 + n_01 > 0):
+        rn_entropy = calc_entropy(n_00, n_01, (n_00 + n_01))
+      if (n_10 + n_11 > 0):
+        ry_entropy = calc_entropy(n_10, n_11, (n_10 + n_11))
+      if(len(c_index) > 1):
+        h_right = ((((n_00 + n_01) / len(c_index)) * rn_entropy) +
+                  (((n_10 + n_11) / len(c_index)) * ry_entropy))
+
+        # calculate the Information gain and if the IG is better than the current one, use the current node
+        # and store the values to create the node
+        R_IG = curr_node.h_right - h_right
+        if(R_IG > right_entropy[0]):
+          if (n_00 >= n_01):
+            if (n_10 >= n_11):
+              right_entropy = (R_IG, h_right, x, 0, 0, rn_entropy, ry_entropy, r_threshold)
+            elif (n_11 > n_10):
+              right_entropy = (R_IG, h_right, x, 0, 1, rn_entropy, ry_entropy, r_threshold)
+          elif (n_01 > n_00):
+            if (n_10 >= n_11):
+              right_entropy = (R_IG, h_right, x, 1, 0, rn_entropy, ry_entropy, r_threshold)
+            elif (num_11 > num_10):
+              right_entropy = (R_IG, h_right, x, 1, 1, rn_entropy, ry_entropy, r_threshold)
+      features_list[x] = 0
+
+
+  #recursion_left if there is actually something left to split on and check for, meaning that the entropy has been
+  #changed to our data type and wthe IG is not 0. Set the left node values that were split and then
+  #go ahead and recrusively check the left subtree and build it.
+  if(max_entropy[2] != -1 and curr_node.h_left > 0):
+    features_left = copy.copy(features_list)
+    features_left[max_entropy[2]] = 1
+    #print(features_left)
+    sub_node.h_value = max_entropy[1]
+    sub_node.h_left = max_entropy[5]
+    sub_node.h_right = max_entropy[6]
+    sub_node.feature = max_entropy[2]
+    sub_node.L_value = max_entropy[3]
+    sub_node.R_value = max_entropy[4]
+    sub_node.thresh = max_entropy[7]
+    curr_node.set_left(sub_node)
+    #print(max_entropy[1])
+    if(max_entropy[1] != 0):
+      entropy_subtree_real(features, labels, max_depth -1, DT_tree, sub_node, copy.copy(features_left))
+
+  #recursion_right if there is actually something left to split on and check for, meaning that the entropy has been
+  #changed to our data type and wthe IG is not 0. Set the right node values that were split and then
+  #go ahead and recrusively check the right subtree and build it.
+  if(right_entropy[2] != -1 and curr_node.h_right > 0):
+    features_right = copy.copy(features_list)
+    features_right[right_entropy[2]] = 1
+    #print(features_right)
+    right_node.h_value = right_entropy[1]
+    right_node.h_left = right_entropy[5]
+    right_node.h_right = right_entropy[6]
+    right_node.feature = right_entropy[2]
+    right_node.L_value = right_entropy[3]
+    right_node.R_value = right_entropy[4]
+    right_node.thresh = right_entropy[7]
+    curr_node.set_right(right_node)
+    #print(right_entropy[1])
+    if(right_entropy[1] != 0):
+      entropy_subtree_real(features, labels, max_depth - 1, DT_tree, right_node, copy.copy(features_right))
+
 
 def find_root_real(features, labels, tree_entropy, max_depth):
-  print(features.shape[1])
   if(max_depth == 0):
     num_0 = 0
     num_1 = 0
@@ -621,12 +825,12 @@ def find_root_real(features, labels, tree_entropy, max_depth):
     num_11 = 0
     #Calculate threshold for feature x
     threshold = calc_threshold(features,labels,x,tree_entropy)
+    print("feature ", x, " threshold: ", threshold)
     for y in range(labels.shape[0]):
       if(features[y][x] < threshold and labels[y] == 0):
         num_00 = num_00 + 1
       if(features[y][x] < threshold and labels[y] == 1):
         num_01 = num_01 + 1
-
       if(features[y][x] >= threshold and labels[y] == 0):
         num_10 = num_10 + 1
       if(features[y][x] >= threshold and labels[y] == 1):
@@ -635,30 +839,33 @@ def find_root_real(features, labels, tree_entropy, max_depth):
     #calculate the entropy of each possible feature for the root node and split.
     n_entropy = 0
     y_entropy = 0
-    print(x, num_00, num_01, num_10, num_11)
+    #print("feature",x, "num00:", num_00, "num01:", num_01, "num10:", num_10, "num11:", num_11)
     if(num_00 + num_01 > 0):
       n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
-    print(n_entropy, end=' ')
+    #print(n_entropy, end=' ')
     if(num_10 + num_11 > 0):
       y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
-    print(y_entropy, end=' ')
+    #print(y_entropy, end=' ')
 
     h_node = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
                         (((num_10 + num_11)/(labels.shape[0])) * y_entropy) )
+    #print("feature", x, "h = ", h_node)
     #If the IG gain is greater than the current one, default set to -inf, then set this as the root node to split on
     #and return the appropriate values
     IG = tree_entropy - h_node
+    #print("feature", x, "IG = ", IG, "\n")
     if(IG > max_entropy[0]):
       if(num_00 >= num_01):
         if(num_10 >= num_11):
-          max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy)
+          max_entropy = (IG, h_node, x, 0, 0, n_entropy, y_entropy, threshold)
         elif(num_11 > num_10):
-          max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy)
+          max_entropy = (IG, h_node, x, 0, 1, n_entropy, y_entropy, threshold)
       elif (num_01 > num_00):
         if (num_10 >= num_11):
-          max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy)
+          max_entropy = (IG, h_node, x, 1, 0, n_entropy, y_entropy, threshold)
         elif (num_11 > num_10):
           max_entropy = (IG, h_node, x, 1, 1,n_entropy, y_entropy)
+  print(max_entropy, "\n")
   return max_entropy
 
 def calc_threshold(features, labels, feature, tree_entropy):
@@ -690,10 +897,10 @@ def calc_threshold(features, labels, feature, tree_entropy):
     y_entropy = 0
     if(num_00 + num_01 > 0):
       n_entropy = calc_entropy(num_00, num_01, (num_00 + num_01))
-    print(n_entropy, end=' ')
+    #print(n_entropy, end=' ')
     if(num_10 + num_11 > 0):
       y_entropy = calc_entropy(num_10, num_11, (num_10 + num_11))
-    print(y_entropy, end=' ')
+    #print(y_entropy, end=' ')
 
     #Information gain of node when splitting samples of a feature at a certain threshold
     h_thresh = ( (((num_00 + num_01)/(labels.shape[0])) * n_entropy) +
@@ -703,7 +910,58 @@ def calc_threshold(features, labels, feature, tree_entropy):
     IG = tree_entropy - h_thresh
     if(IG > max_entropy):
       max_entropy_threshold = threshold
-
-  print("mmax_entropy_threshold", max_entropy_threshold)
   return max_entropy_threshold
 
+def DT_test_real(X,Y,DT):
+  #print(Y.shape[0])
+  if(DT.max_depth == 0):
+    num_correct = 0
+    for labels in range(Y.shape[0]):
+      if(Y[labels] == DT.label):
+        num_correct = num_correct + 1
+    #print((num_correct) / (Y.shape[0]))
+    return (num_correct/ Y.shape[0]) * 100
+  #recrusively check which direction and feature to use and then return if it is correct, otherwise, keep going until
+  #there is no traversal left within the sample
+  num_correct = 0
+  this_node = DT.root
+  for x in range(Y.shape[0]):
+    this_feature = this_node.feature
+    direction = X[x][this_feature]
+    if(direction == 0 and this_node.node_left == None):
+      if(this_node.L_value == Y[x]):
+        num_correct = num_correct + 1
+    elif(direction == 0 and this_node.node_left != None):
+      num_correct = num_correct + DT_test_real_helper(X[x], Y[x], this_node.node_left)
+    elif(direction == 1 and this_node.node_right == None):
+      if(this_node.R_value == Y[x]):
+        num_correct = num_correct + 1
+    elif(direction == 1 and this_node.node_right != None):
+      num_correct = num_correct + DT_test_real_helper(X[x], Y[x], this_node.node_right)
+
+  #print((num_correct)/(Y.shape[0]))
+  return(num_correct/ Y.shape[0]) * 100
+
+""" DT_test_real_helper: 
+    1. Go through the sample and then recursively traverses until there is not a node left to traverse 
+        properly for the specific sample and then counts the number of correct labels for each sample set
+"""
+def DT_test_real_helper(sample, label, this_node):
+  #print("In DT_test_binary_helper")
+  this_feature = this_node.feature
+  direction = sample[this_feature]
+  # recrusively check which direction and feature to use and then return if it is correct, otherwise, keep going until
+  # there is no traversal left within the sample
+  num_correct = 0
+  if (direction == 0 and this_node.node_left == None):
+    if (this_node.L_value == label):
+      num_correct = num_correct + 1
+  elif (direction == 0 and this_node.node_left != None):
+    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_left)
+  elif (direction == 1 and this_node.node_right == None):
+    if (this_node.R_value == label):
+      num_correct = num_correct + 1
+  elif (direction == 1 and this_node.node_right != None):
+    num_correct = num_correct + DT_test_binary_helper(sample, label, this_node.node_right)
+
+  return num_correct
