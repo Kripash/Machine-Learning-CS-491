@@ -35,6 +35,11 @@ def find_nearest_cluster_center(x, cluster_centers):
 
 
 def calculate_mean_of_points(X):
+    """
+    Calculates the cluster center for a given cluster X. Rounds to 3 decimal points.
+    :param X: list of points in a cluster.
+    :return: mean. cluster center for the given cluster X
+    """
     mean = []
 
     for point_index in range(len(X)):
@@ -45,7 +50,7 @@ def calculate_mean_of_points(X):
                 mean[feature_index] += X[point_index][feature_index]
 
     for i in range(len(mean)):
-        mean[i] /= len(X)
+        mean[i] = round(mean[i] / len(X), 3)
 
     return mean
 
@@ -59,14 +64,49 @@ def find_points_in_cluster(X, cluster_center_index, cluster_center_assignments):
     """
     points_in_cluster = []
 
-    for i in cluster_center_assignments[cluster_center_index]:
+    for i in range(len(cluster_center_assignments[cluster_center_index])):
         points_in_cluster.append(X[cluster_center_assignments[cluster_center_index][i]])
 
     return points_in_cluster
 
 
+def compute_random_cluster_center(minima, maxima):
+    """
+    Compute a random cluster center within the range of the data. Round to 3 decimal points.
+    :param minima:
+    :param maxima:
+    :return: cluster center
+    """
+    cluster_center = []
+
+    for i in range(len(minima)):
+        cluster_center.append(round(random.uniform(minima[i], maxima[i]), 3))
+
+    return cluster_center
+
+
+def find_extrema(X):
+    minima = []
+    maxima = []
+
+    for point_index in range(len(X)):
+        for feature_index in range(len(X[0])):
+            if point_index == 0:
+                minima.append(X[point_index][feature_index])
+                maxima.append(X[point_index][feature_index])
+            else:
+                if X[point_index][feature_index] < minima[feature_index]:
+                    minima[feature_index] = X[point_index][feature_index]
+
+                if X[point_index][feature_index] > maxima[feature_index]:
+                    maxima[feature_index] = X[point_index][feature_index]
+
+    return minima, maxima
+
+
 def K_Means(X, K):
     points = X.tolist()
+    minima, maxima = find_extrema(X)
 
     # cluster_center_assignments: list with each (index-1) corresponding to a cluster center k. At each index is a
     # list with corresponding points
@@ -76,7 +116,7 @@ def K_Means(X, K):
 
     # list of cluster centers
     # randomly initialize cluster centers: choose random points from the data set X
-    cluster_centers = random.choices(X, k=K)
+    cluster_centers = random.choices(points, k=K)
 
     # emulating a do while loop
     cluster_centers_have_changed = False
@@ -94,10 +134,14 @@ def K_Means(X, K):
             points_in_cluster = find_points_in_cluster(X, i, cluster_center_assignments)
             new_cluster_center = calculate_mean_of_points(points_in_cluster)
 
+            # if new_cluster_center is empty, assign a random cluster center within the range of the data
+            # this can happen if a cluster becomes empty
+            if not new_cluster_center:
+                new_cluster_center = compute_random_cluster_center(minima, maxima)
+
             if new_cluster_center != cluster_centers[i]:
                 cluster_centers_have_changed = True
-
-            cluster_centers[i] = new_cluster_center
+                cluster_centers[i] = new_cluster_center
 
         # emulating a do while loop: while cluster centers stop changing
         if not cluster_centers_have_changed:
@@ -107,4 +151,3 @@ def K_Means(X, K):
 
     # return cluster_centers as numpy array
     return np.array(cluster_centers)
-
