@@ -2,12 +2,6 @@ import copy
 import numpy as np
 import math
 
-X = np.array([[1, 1], [2, 1], [0, 10], [10, 10], [5, 5], [3, 10], [9, 4], [6, 2], [2, 2], [8, 7]])
-Y = np.array([[1], [-1], [1], [-1], [1], [-1], [1], [-1], [1], [-1]])
-
-x_train = np.array([[1, 5], [2, 6], [2, 7], [3, 7], [3, 8], [4, 8], [5, 1], [5, 9], [6, 2], [7, 2], [7, 3], [8, 3], [8, 4], [9, 5]])
-y_train = np.array([[-1], [-1], [1], [-1], [1], [-1], [1], [-1], [1], [-1], [1], [-1], [1], [1]])
-
 class point:
   def __init__(self, feature, label, euclid, classify):
     self.feature = copy.copy(feature)
@@ -69,11 +63,9 @@ def choose_K(X_train, Y_train, X_val, Y_val):
   for i in range(Y_train.shape[0]):
     accuracy = KNN_test(X_train, Y_train, X_val, Y_val, i + 1)
     if(accuracy > best_training[0]):
-      best_training = (accuracy, i)
+      best_training = (accuracy, i + 1)
 
   #print(best_training)
   return(best_training[1])
 
-#choose_K(x_train, y_train, X, Y)
-#print(KNN_test(x_train, y_train, X, Y, 1))
 
