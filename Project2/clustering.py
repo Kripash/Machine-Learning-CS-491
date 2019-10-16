@@ -158,13 +158,7 @@ def K_Means(X, K):
 
 def find_majority(all_cluster_centers, amounts, index):
     """
-    Find and return the cluster centers that came up the most. Running K_Means many times results into many different
-    solutions for the cluster centers. Many of them are pretty similar. We could optimize this function to return the
-    mean of the majority cluster centers. But we are assuming that, since the initial cluster centers were chosen randomly,
-    it is okay to return the cluster center that just comes up the most, even if it is no clear majority (let's say 50%).
-    This is because many of the cluster centers are pretty similar to other outcomes of K_Means. We're assuming that the
-    proportions of these similar cluster center groups are approximately the same as the proportions of the few outcomes
-    that come up most.
+    Find and return the cluster centers that came up the most.
     :param all_cluster_centers:
     :param amounts:
     :param index:
@@ -189,7 +183,9 @@ def find_majority(all_cluster_centers, amounts, index):
                 majority_cluster_centers = []  # There is no majority at this moment
                 number_of_results_for_max_occurrences += 1
 
-    return majority_cluster_centers
+    proportion = max_occurrences / number_of_kmeans_computations
+
+    return majority_cluster_centers if proportion > 0.5 else []
 
 
 def K_Means_better(X,K):
@@ -199,8 +195,8 @@ def K_Means_better(X,K):
 
     there_is_a_majority = False
     index = 1
-    max_iterations = 5000  # we don't want to wait for hours...
-    min_iterations = 500  # but we should still try kmeans many times
+    max_iterations = 500  # we don't want to wait for hours...
+    min_iterations = 100  # but we should still try kmeans many times
     while True:
         cluster_centers = K_Means(X, K).tolist()
 
