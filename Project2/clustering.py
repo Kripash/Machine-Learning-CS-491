@@ -111,8 +111,6 @@ def K_Means(X, K):
     # cluster_center_assignments: list with each (index-1) corresponding to a cluster center k. At each index is a
     # list with corresponding points
     cluster_center_assignments = []
-    for i in range(K):
-        cluster_center_assignments.append([])
 
     # list of cluster centers
     # randomly initialize cluster centers: choose random points from the data set X
@@ -121,6 +119,11 @@ def K_Means(X, K):
     # emulating a do while loop
     cluster_centers_have_changed = False
     while True:
+        # reset the cluster_center_assignments since the will be recaluclated
+        cluster_center_assignments = []
+        for i in range(K):
+            cluster_center_assignments.append([])
+
         # for points[i] in points
         for i in range(len(points)):
             # compute euclidean distance from data point X[i] to every cluster center
