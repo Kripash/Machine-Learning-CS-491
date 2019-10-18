@@ -70,43 +70,8 @@ def find_points_in_cluster(X, cluster_center_index, cluster_center_assignments):
     return points_in_cluster
 
 
-def compute_random_cluster_center(minima, maxima):
-    """
-    Compute a random cluster center within the range of the data. Round to 2 decimal points.
-    :param minima:
-    :param maxima:
-    :return: cluster center
-    """
-    cluster_center = []
-
-    for i in range(len(minima)):
-        cluster_center.append(round(random.uniform(minima[i], maxima[i]), 2))
-
-    return cluster_center
-
-
-def find_extrema(X):
-    minima = []
-    maxima = []
-
-    for point_index in range(len(X)):
-        for feature_index in range(len(X[0])):
-            if point_index == 0:
-                minima.append(X[point_index][feature_index])
-                maxima.append(X[point_index][feature_index])
-            else:
-                if X[point_index][feature_index] < minima[feature_index]:
-                    minima[feature_index] = X[point_index][feature_index]
-
-                if X[point_index][feature_index] > maxima[feature_index]:
-                    maxima[feature_index] = X[point_index][feature_index]
-
-    return minima, maxima
-
-
 def K_Means(X, K):
     points = X.tolist()
-    minima, maxima = find_extrema(X)
 
     # cluster_center_assignments: list with each (index-1) corresponding to a cluster center k. At each index is a
     # list with corresponding points
@@ -140,7 +105,7 @@ def K_Means(X, K):
             # if new_cluster_center is empty, assign a random cluster center within the range of the data
             # this can happen if a cluster becomes empty
             if not new_cluster_center:
-                new_cluster_center = compute_random_cluster_center(minima, maxima)
+                new_cluster_center = random.choice(points)
 
             if new_cluster_center != cluster_centers[i]:
                 cluster_centers_have_changed = True
@@ -183,9 +148,7 @@ def find_majority(all_cluster_centers, amounts, index):
                 majority_cluster_centers = []  # There is no majority at this moment
                 number_of_results_for_max_occurrences += 1
 
-    proportion = max_occurrences / number_of_kmeans_computations
-
-    return majority_cluster_centers if proportion > 0.5 else []
+    return majority_cluster_centers
 
 
 def K_Means_better(X,K):
@@ -195,8 +158,8 @@ def K_Means_better(X,K):
 
     there_is_a_majority = False
     index = 1
-    max_iterations = 500  # we don't want to wait for hours...
-    min_iterations = 100  # but we should still try kmeans many times
+    max_iterations = 5000  # we don't want to wait for hours...
+    min_iterations = 1000  # but we should still try kmeans many times
     while True:
         cluster_centers = K_Means(X, K).tolist()
 

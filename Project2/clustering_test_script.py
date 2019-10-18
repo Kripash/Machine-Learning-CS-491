@@ -1,6 +1,7 @@
 import numpy as np
 import clustering as cl
 
+
 # clustering1.txt
 # X = np.array([[0], [1], [2], [7], [8], [9], [12], [14], [15]])
 # K = 3
@@ -28,5 +29,4 @@ X = np.array([[1, 0], [7, 4], [9, 6], [2, 1], [4, 8], [0, 3], [13, 5], [6, 8], [
 # K = 2
 K = 3
 C = cl.K_Means_better(X, K)
-print("")
 print(C)
