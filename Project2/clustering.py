@@ -212,7 +212,9 @@ def K_Means_better(X,K):
             amount_of_each_of_all_cluster_centers[all_cluster_centers.index(cluster_centers)] += 1
 
         # find out if there is a majority
-        majority_cluster_centers = find_majority(all_cluster_centers, amount_of_each_of_all_cluster_centers, index)
+        if index >= min_iterations:
+            majority_cluster_centers = find_majority(all_cluster_centers, amount_of_each_of_all_cluster_centers, index)
+
         if majority_cluster_centers is not None and majority_cluster_centers:
             there_is_a_majority = True
         else:
