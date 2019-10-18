@@ -84,7 +84,7 @@ def KNN_test(X_train, Y_train, X_test, Y_test, K):
     elif(prediction[inc] > 0 and Y_test[inc] > 0):
       num_correct = num_correct + 1
 
-  return(num_correct/ X_test.shape[0] * 100)
+  return(num_correct/ X_test.shape[0])
 
 
 

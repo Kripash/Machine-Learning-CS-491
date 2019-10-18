@@ -112,7 +112,7 @@ def perceptron_test(X_test, Y_test, w, b):
     elif(label >= 0 and Y_test[i] >= 0):
         num_correct = num_correct + 1
 
-  return num_correct/X_test.shape[0] * 100
+  return num_correct/X_test.shape[0]
 
 
 
