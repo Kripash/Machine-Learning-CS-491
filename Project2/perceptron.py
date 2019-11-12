@@ -2,11 +2,7 @@ import numpy as np
 import math
 import copy
 
-#X = np.array([[0,1] , [1,0] , [5,4] , [1,1] , [3,3] , [2,4] , [1,6] ])
-#Y = np.array([[1], [1], [0], [1], [0], [0], [0]])
 
-#X = np.array([[-2,1] , [1,1] , [1.5,-0.5] , [-2,-1] , [-1,-1.5] , [2,-2] ])
-#Y = np.array([[1], [1], [1], [-1], [-1], [-1]])
 
 """
 Perceptron object:
@@ -116,8 +112,3 @@ def perceptron_test(X_test, Y_test, w, b):
 
 
 
-#W = perceptron_train(X, Y)
-
-#accuracy = perceptron_test(X, Y, W[0], W[1])
-
-#print(accuracy)
