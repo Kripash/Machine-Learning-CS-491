@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
-debug = True
+debug = False
 
 def compute_Z(X, centering=True, scaling=False):
   global debug
@@ -86,4 +86,5 @@ X = np.array([[-1, -1], [-1, 1], [1, -1], [1,1]])
 Z = compute_Z(X, centering=True, scaling=True)
 cov_z = compute_covariance_matrix(Z)
 L, PCS = find_pcs(cov_z)
+print(PCS)
 Z_star = project_data(Z, PCS, L, 1, 0)
