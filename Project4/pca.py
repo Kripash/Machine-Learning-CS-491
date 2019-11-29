@@ -30,7 +30,7 @@ def find_pcs(COV):
   PCS = PCS.real
 
   indices = np.flip( L.argsort() ) # indices now has indices of eigenvalues in the order of largest to smallest.
-  print(indices)
+  #print(indices)
   L = np.flip( L.sort() )
 
   PCS = PCS[:, indices]
