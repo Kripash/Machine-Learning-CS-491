@@ -42,8 +42,7 @@ def determineK(L, var):
   for i in range(len(L)):
     variance = np.sum(L[:i]) / sum
     if(variance >= var):
-      return i 
-  return len(L)
+      return i + 1
 
 def project_data(Z, PCS, L, k, var):
   if(k == 0):
